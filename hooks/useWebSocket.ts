@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useGameStore } from '@/store/game.store';
-import { CalledNumberResponse, GameStatus } from '@/types';
+import { CalledNumberResponse, GameStatus, BingoClaimResponse } from '@/types';
 
 interface GameEvent {
-  type: 'NUMBER_CALLED' | 'GAME_STATUS_CHANGED' | 'BINGO_CLAIM_RESULT';
+  type: 'NUMBER_CALLED' | 'GAME_STATUS_CHANGED' | 'CLAIM_PENDING' | 'CLAIM_RESOLVED';
   data: Record<string, unknown>;
 }
 
@@ -18,6 +18,7 @@ export function useGameWebSocket(gameId: number | null) {
     setTotalNumbersCalled,
     setPrizePool,
     setConnecting,
+    setClaimPending,
     reset,
   } = useGameStore();
 
@@ -66,8 +67,17 @@ function handleGameEvent(event: GameEvent) {
       break;
     case 'GAME_STATUS_CHANGED':
       store.setGameStatus(event.data.status as GameStatus);
+      if (event.data.status === 'IN_PROGRESS') {
+        store.setClaimPending(null);
+      }
       break;
-    case 'BINGO_CLAIM_RESULT':
+    case 'CLAIM_PENDING':
+      store.setGameStatus(GameStatus.CLAIM_PENDING);
+      store.setClaimPending(event.data as unknown as BingoClaimResponse);
+      break;
+    case 'CLAIM_RESOLVED':
+      store.setGameStatus(event.data.status as GameStatus);
+      store.setClaimPending(null);
       break;
   }
 }

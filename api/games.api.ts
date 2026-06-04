@@ -3,6 +3,7 @@ import {
   ApiResponse,
   GameResponse,
   GameStateResponse,
+  BingoClaimResponse,
   BingoClaimResultResponse,
   RegisterResponse,
   CreateGameRequest,
@@ -15,6 +16,10 @@ export const gamesApi = {
   },
   start: async (id: number) => {
     const res = await apiClient.post<ApiResponse<GameResponse>>(`/games/${id}/start`);
+    return res.data;
+  },
+  cancel: async (id: number) => {
+    const res = await apiClient.post<ApiResponse<string>>(`/games/${id}/cancel`);
     return res.data;
   },
   pause: async (id: number) => {
@@ -39,6 +44,22 @@ export const gamesApi = {
   },
   claim: async (id: number) => {
     const res = await apiClient.post<ApiResponse<BingoClaimResultResponse>>(`/games/${id}/claim`);
+    return res.data;
+  },
+  getPendingClaims: async (gameId: number) => {
+    const res = await apiClient.get<ApiResponse<BingoClaimResponse[]>>(`/games/${gameId}/claims/pending`);
+    return res.data;
+  },
+  approveClaim: async (gameId: number, claimId: number) => {
+    const res = await apiClient.post<ApiResponse<BingoClaimResultResponse>>(`/games/${gameId}/claims/${claimId}/approve`);
+    return res.data;
+  },
+  rejectClaim: async (gameId: number, claimId: number, reason?: string) => {
+    const res = await apiClient.post<ApiResponse<string>>(`/games/${gameId}/claims/${claimId}/reject?reason=${reason ?? 'Rejected by admin'}`);
+    return res.data;
+  },
+  getState: async (id: number) => {
+    const res = await apiClient.get<ApiResponse<GameStateResponse>>(`/games/${id}/state`);
     return res.data;
   },
   audit: async (id: number) => {

@@ -29,6 +29,14 @@ export function useStartGame() {
   });
 }
 
+export function useCancelGame() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => gamesApi.cancel(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] }),
+  });
+}
+
 export function usePauseGame() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -61,9 +69,51 @@ export function useRegisterForGame() {
   });
 }
 
+export function usePendingClaims(gameId: number) {
+  return useQuery({
+    queryKey: ['games', 'claims', 'pending', gameId],
+    queryFn: async () => {
+      const res = await gamesApi.getPendingClaims(gameId);
+      return res.data;
+    },
+    enabled: !!gameId,
+    refetchInterval: 5000,
+  });
+}
+
 export function useClaimBingo() {
   return useMutation({
     mutationFn: (id: number) => gamesApi.claim(id),
+  });
+}
+
+export function useApproveClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gameId, claimId }: { gameId: number; claimId: number }) =>
+      gamesApi.approveClaim(gameId, claimId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] }),
+  });
+}
+
+export function useRejectClaim() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gameId, claimId, reason }: { gameId: number; claimId: number; reason?: string }) =>
+      gamesApi.rejectClaim(gameId, claimId, reason),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['games'] }),
+  });
+}
+
+export function useGameState(id: number) {
+  return useQuery({
+    queryKey: ['games', 'state', id],
+    queryFn: async () => {
+      const res = await gamesApi.getState(id);
+      return res.data;
+    },
+    enabled: !!id,
+    refetchInterval: 15000,
   });
 }
 

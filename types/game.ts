@@ -43,9 +43,9 @@ export interface GameStateResponse {
   status: GameStatus;
   currentCallIndex: number;
   totalNumbersCalled: number;
-  calledNumbers: CalledNumberResponse[];
+  calledNumbers: number[];
   prizePool: number;
-  playerCard: CardResponse | null;
+  playerCard: number[][] | null;
   hasPlayerCard: boolean;
   isWinner: boolean;
 }
@@ -65,6 +65,10 @@ export interface BingoClaimResponse {
 
 export interface BingoClaimResultResponse {
   valid: boolean;
+  claimId?: number;
+  pendingReview?: boolean;
+  gameEnded?: boolean;
+  approvedCount?: number;
   rewardAmount: number;
   platformFee: number;
   agentCommission: number;

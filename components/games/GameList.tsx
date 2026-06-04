@@ -1,14 +1,16 @@
+import Link from 'next/link';
 import { GameResponse, GameStatus } from '@/types';
 
 interface GameListProps {
   games: GameResponse[];
   role: 'admin' | 'player';
   onStart?: (id: number) => void;
+  onCancel?: (id: number) => void;
   onEnd?: (id: number) => void;
   onRegister?: (id: number) => void;
 }
 
-export function GameList({ games, role, onStart, onEnd, onRegister }: GameListProps) {
+export function GameList({ games, role, onStart, onCancel, onEnd, onRegister }: GameListProps) {
   if (!games.length) {
     return <p style={{ color: '#666' }}>No games available.</p>;
   }
@@ -19,18 +21,24 @@ export function GameList({ games, role, onStart, onEnd, onRegister }: GameListPr
         <div key={game.id} style={{ background: '#fff', borderRadius: 8, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <strong>Game #{game.id}</strong>
+              <Link href={role === 'admin' ? `/admin/games/${game.id}` : `/player/game/${game.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}>
+                <strong>Game #{game.id}</strong>
+              </Link>
               <span style={{ marginLeft: 12, padding: '2px 8px', borderRadius: 4, fontSize: 12, background: statusColor(game.status), color: '#fff' }}>
                 {game.status}
               </span>
             </div>
             <div style={{ fontSize: 14, color: '#666' }}>
-              Fee: {game.entryFee} | Pool: {game.prizePool} | Players: {game.totalNumbersCalled}/{game.maxPlayers}
+              Fee: {game.entryFee} | Pool: {game.prizePool}
             </div>
           </div>
           <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
             {role === 'admin' && game.status === GameStatus.REGISTRATION_OPEN && onStart && (
               <button onClick={() => onStart(game.id)} style={btnStyle}>Start</button>
+            )}
+            {role === 'admin' && game.status === GameStatus.REGISTRATION_OPEN && onCancel && (
+              <button onClick={() => onCancel(game.id)} style={{ ...btnStyle, background: '#e94560' }}>Cancel</button>
             )}
             {role === 'admin' && game.status === GameStatus.IN_PROGRESS && onEnd && (
               <button onClick={() => onEnd(game.id)} style={{ ...btnStyle, background: '#e94560' }}>End</button>

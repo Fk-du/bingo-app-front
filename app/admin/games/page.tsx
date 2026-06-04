@@ -2,13 +2,14 @@
 
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role } from '@/types/enums';
-import { useActiveGames, useStartGame, useEndGame } from '@/hooks/useGames';
+import { useActiveGames, useStartGame, useCancelGame, useEndGame } from '@/hooks/useGames';
 import { CreateGameForm } from '@/components/games/CreateGameForm';
 import { GameList } from '@/components/games/GameList';
 
 export default function AdminGamesPage() {
   const { data: games, isLoading } = useActiveGames();
   const { mutate: startGame } = useStartGame();
+  const { mutate: cancelGame } = useCancelGame();
   const { mutate: endGame } = useEndGame();
 
   return (
@@ -22,7 +23,7 @@ export default function AdminGamesPage() {
       {isLoading ? (
         <p>Loading...</p>
       ) : (
-        <GameList games={games ?? []} role="admin" onStart={startGame} onEnd={endGame} />
+        <GameList games={games ?? []} role="admin" onStart={startGame} onCancel={cancelGame} onEnd={endGame} />
       )}
     </ProtectedRoute>
   );

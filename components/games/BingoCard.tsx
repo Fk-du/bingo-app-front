@@ -4,49 +4,53 @@ interface BingoCardProps {
   isWinner?: boolean;
 }
 
-export function BingoCard({ numbers, calledNumbers, isWinner }: BingoCardProps) {
-  const bingoLetter = (col: number) => {
-    const letters = ['B', 'I', 'N', 'G', 'O'];
-    return letters[col];
-  };
+const letters = ['B', 'I', 'N', 'G', 'O'];
 
+function numberToLetter(n: number): string {
+  if (n >= 1 && n <= 15) return 'B';
+  if (n >= 16 && n <= 30) return 'I';
+  if (n >= 31 && n <= 45) return 'N';
+  if (n >= 46 && n <= 60) return 'G';
+  if (n >= 61 && n <= 75) return 'O';
+  return '';
+}
+
+export function BingoCard({ numbers, calledNumbers, isWinner }: BingoCardProps) {
   return (
-    <div style={{ display: 'inline-block', background: '#fff', borderRadius: 8, padding: 8 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 48px)', gap: 2 }}>
-        {[0, 1, 2, 3, 4].map((col) => (
-          <div key={`header-${col}`} style={{ textAlign: 'center', fontWeight: 'bold', fontSize: 18, color: '#e94560', padding: 4 }}>
-            {bingoLetter(col)}
+    <div className="inline-block bg-white rounded-xl shadow-lg p-3">
+      <div className="grid grid-cols-5 gap-1">
+        {letters.map((letter) => (
+          <div
+            key={letter}
+            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center font-bold text-lg text-rose-600 bg-rose-50 rounded"
+          >
+            {letter}
           </div>
         ))}
         {numbers.map((row, ri) =>
           row.map((num, ci) => {
-            const isMarked = calledNumbers.has(num);
-            const isCenter = ri === 2 && ci === 2;
+            const isCalled = calledNumbers.has(num);
+            const isFree = ri === 2 && ci === 2;
             return (
               <div
                 key={`${ri}-${ci}`}
-                style={{
-                  width: 48,
-                  height: 48,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  fontWeight: isMarked ? 'bold' : 'normal',
-                  background: isCenter ? '#ffd700' : isMarked ? '#4ecca3' : '#f0f0f0',
-                  color: isMarked ? '#fff' : '#333',
-                  borderRadius: 4,
-                }}
+                className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-base font-semibold rounded transition-colors duration-200 ${
+                  isFree
+                    ? 'bg-yellow-400 text-yellow-900'
+                    : isCalled
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-zinc-100 text-zinc-700'
+                }`}
               >
-                {isCenter ? 'FREE' : num}
+                {isFree ? '★' : num}
               </div>
             );
           })
         )}
       </div>
       {isWinner && (
-        <div style={{ textAlign: 'center', marginTop: 8, color: '#e94560', fontWeight: 'bold' }}>
-          BINGO!
+        <div className="text-center mt-3 text-rose-600 font-bold text-lg animate-pulse">
+          🎉 BINGO! 🎉
         </div>
       )}
     </div>
