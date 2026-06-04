@@ -1,0 +1,50 @@
+export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  PLAYER = 'PLAYER',
+}
+
+export enum GameStatus {
+  REGISTRATION_OPEN = 'REGISTRATION_OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  CLAIM_PENDING = 'CLAIM_PENDING',
+  ENDED = 'ENDED',
+}
+
+export enum TransactionType {
+  TOP_UP = 'TOP_UP',
+  WITHDRAWAL = 'WITHDRAWAL',
+  DEPOSIT = 'DEPOSIT',
+  BET = 'BET',
+  WIN = 'WIN',
+  PLATFORM_FEE = 'PLATFORM_FEE',
+  FUND_AGENT_TO_PLAYER = 'FUND_AGENT_TO_PLAYER',
+  FUND_SUPER_ADMIN_TO_AGENT = 'FUND_SUPER_ADMIN_TO_AGENT',
+}
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum RequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum AssignmentStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  LOCKED = 'LOCKED',
+}
+
+export enum FundStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
