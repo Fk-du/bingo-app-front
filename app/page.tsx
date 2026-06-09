@@ -12,22 +12,45 @@ export default function Home() {
   const { isAuthenticated, role } = useAuthStore();
   const { mutate: login, isPending, error } = useLogin();
   const [tgReady, setTgReady] = useState(false);
+  const [telegramAvailable, setTelegramAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout>;
+    let gaveUp = false;
+
     const check = () => {
-      if (getTelegramInitData()) {
+      if (cancelled) return;
+      const initData = getTelegramInitData();
+      if (initData) {
         setTgReady(true);
+        setTelegramAvailable(true);
         readyTelegramApp();
         expandTelegramApp();
+        clearInterval(interval);
+        clearTimeout(timeout);
+      } else if (gaveUp) {
+        setTelegramAvailable(!!window.Telegram?.WebApp);
+        setTgReady(true);
+        clearInterval(interval);
       }
     };
+
     check();
-    const interval = setInterval(check, 100);
-    setTimeout(() => {
+
+    if (!cancelled) {
+      interval = setInterval(check, 200);
+      timeout = setTimeout(() => {
+        gaveUp = true;
+      }, 10000);
+    }
+
+    return () => {
+      cancelled = true;
       clearInterval(interval);
-      setTgReady(true);
-    }, 3000);
-    return () => clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -69,8 +92,22 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8 text-center">
         <h1 className="text-3xl font-bold">BingoPlus</h1>
         <p className="text-zinc-600 dark:text-zinc-400 max-w-sm">
-          This app must be opened from Telegram. If you are using Telegram, make sure the Mini App domain is configured in BotFather.
+          This app must be opened from Telegram.
         </p>
+        {telegramAvailable === false && (
+          <p className="text-sm text-amber-500 max-w-sm">
+            Telegram WebApp script failed to load. Check your network connection and ensure
+            <code className="mx-1 px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-xs">https://telegram.org/js/telegram-web-app.js</code>
+            is not blocked.
+          </p>
+        )}
+        {telegramAvailable && (
+          <p className="text-sm text-amber-500 max-w-sm">
+            Telegram is detected but no init data was received. Make sure the Mini App domain is configured in BotFather
+            (<code className="mx-1 px-1 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-xs">/setdomain</code>)
+            and the URL matches this app&apos;s URL.
+          </p>
+        )}
         <p className="text-xs text-zinc-500">URL: {typeof window !== 'undefined' ? window.location.href : ''}</p>
       </div>
     );

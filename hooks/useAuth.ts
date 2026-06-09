@@ -12,9 +12,11 @@ export function useLogin() {
       const initData = getTelegramInitData();
       if (!initData) throw new Error('No Telegram initData found');
       const res = await authApi.login({ initData });
+      if (!res.success) throw new Error(res.message);
       return res.data;
     },
     onSuccess: (user) => {
+      if (!user) return;
       setUser(user);
       queryClient.invalidateQueries({ queryKey: ['me'] });
     },
