@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role, GameStatus } from '@/types';
@@ -8,7 +8,8 @@ import { useGameWebSocket } from '@/hooks/useWebSocket';
 import { useGameStore } from '@/store/game.store';
 import { useClaimBingo, useActiveGames, useRegisterForGame, useGameState } from '@/hooks/useGames';
 import { BingoCard } from '@/components/games/BingoCard';
-import { NumberBoard } from '@/components/games/NumberBoard';
+import { ActionButton, LiveBadge, Surface } from '@/components/ui/Surface';
+import { IconBack } from '@/components/ui/Icons';
 
 function numberToLetter(n: number): string {
   if (n >= 1 && n <= 15) return 'B';
@@ -20,23 +21,7 @@ function numberToLetter(n: number): string {
 }
 
 function formatNumber(n: number): string {
-  return `${numberToLetter(n)}-${n}`;
-}
-
-function cardProgress(numbers: number[][], calledNumbers: Set<number>): { marks: number; total: number } {
-  let marks = 0;
-  let total = 0;
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 5; c++) {
-      if (r === 2 && c === 2) continue;
-      const n = numbers[r][c];
-      if (n > 0) {
-        total++;
-        if (calledNumbers.has(n)) marks++;
-      }
-    }
-  }
-  return { marks, total };
+  return `${n}`;
 }
 
 export default function PlayerGamePage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,7 +39,6 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
     prizePool,
     playerCard,
     isConnecting,
-    claimPending,
     setGameStatus,
     setCalledNumbers,
     setTotalNumbersCalled,
@@ -62,14 +46,14 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
     setPlayerCard,
   } = useGameStore();
 
-  const calledSet = new Set(calledNumbers.map((n) => n.number));
+  const calledSet = useMemo(() => new Set(calledNumbers.map((n) => n.number)), [calledNumbers]);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
-  const [gameOver, setGameOver] = useState<{ won: boolean; reward?: number } | null>(null);
+  const [gameOver, setGameOver] = useState<{ won: boolean } | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [autoDaub, setAutoDaub] = useState(true);
 
-  // Load game state into store on first fetch
   useEffect(() => {
     if (!gameState) return;
     setGameStatus(gameState.status);
@@ -86,36 +70,26 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
       setCalledNumbers(calledAsObjects);
       setTotalNumbersCalled(gameState.calledNumbers.length);
     }
-    if (gameState.isWinner && gameState.status === GameStatus.ENDED) {
-      setGameOver({ won: true });
-    }
-  }, [gameState]);
+    setGameOver(gameState.isWinner && gameState.status === GameStatus.ENDED ? { won: true } : null);
+  }, [gameState, gameId, setCalledNumbers, setGameStatus, setPlayerCard, setPrizePool, setTotalNumbersCalled]);
 
-  // Track last called number for the animated display
   useEffect(() => {
     if (calledNumbers.length > 0) {
       setLastCalledNumber(calledNumbers[calledNumbers.length - 1].number);
     }
   }, [calledNumbers]);
 
-  // Track game over state
   useEffect(() => {
     if (gameStatus === GameStatus.ENDED) {
-      if (!gameOver) {
-        setGameOver({ won: false });
-      }
+      setGameOver((prev) => prev ?? { won: false });
     } else {
       setGameOver(null);
     }
   }, [gameStatus]);
 
-  const pulseClass = 'animate-pulse';
-
   const game = games?.find((g) => g.id === gameId);
   const hasCard = playerCard !== null;
-  const gameOverStatus = gameOver;
-  const progress = hasCard ? cardProgress(playerCard!, calledSet) : { marks: 0, total: 24 };
-  const progressPct = progress.total > 0 ? Math.round((progress.marks / progress.total) * 100) : 0;
+  const isLive = gameStatus === GameStatus.IN_PROGRESS;
 
   const handleRegister = () => {
     setRegistering(true);
@@ -136,9 +110,9 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
     claimBingo(gameId, {
       onSuccess: (res) => {
         if (res.data.pendingReview) {
-          setClaimMessage('BINGO claimed! Waiting for admin review.');
+          setClaimMessage('Bingo claimed! Waiting for admin review.');
         } else if (res.data.valid) {
-          setClaimMessage(`BINGO! You won ${res.data.rewardAmount} points!`);
+          setClaimMessage(`Bingo! You won ${res.data.rewardAmount} coins.`);
         }
       },
       onError: (err) => setError(err.message),
@@ -147,152 +121,131 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
 
   return (
     <ProtectedRoute roles={[Role.PLAYER]}>
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <button onClick={() => router.back()} className="text-zinc-400 hover:text-white text-sm cursor-pointer">
-          ← Back
-        </button>
-        <h1 className="text-xl font-bold">Game #{gameId}</h1>
-        {gameStatus && (
-          <span className={`px-3 py-1 rounded text-sm font-medium text-white ${
-            gameStatus === GameStatus.IN_PROGRESS ? 'bg-blue-500' :
-            gameStatus === GameStatus.REGISTRATION_OPEN ? 'bg-emerald-500' :
-            gameStatus === GameStatus.CLAIM_PENDING ? 'bg-amber-500' :
-            'bg-zinc-500'
-          }`}>
-            {gameStatus === GameStatus.REGISTRATION_OPEN ? 'OPEN' :
-             gameStatus === GameStatus.CLAIM_PENDING ? 'PENDING REVIEW' :
-             gameStatus === GameStatus.ENDED ? 'ENDED' : gameStatus}
-          </span>
-        )}
-        <span className="text-zinc-400 ml-auto">Prize: {prizePool}</span>
+      <div className="border-b border-bp-border bg-bp-surface px-0 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-bp-border bg-bp-bg"
+          >
+            <IconBack className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-bp-text">Game #{gameId}</p>
+            <p className="text-xs text-bp-muted">Max {game?.maxPlayers ?? '—'} players</p>
+          </div>
+          {isLive && <LiveBadge />}
+        </div>
       </div>
 
-      {isConnecting && <p className="text-zinc-400 mb-2">Connecting to game...</p>}
-      {stateLoading && !gameState && <p className="text-zinc-400 mb-2">Loading game state...</p>}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Surface className="p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-bp-muted">Prize Pool</p>
+          <p className="mt-1 text-xl font-bold text-bp-gold">{prizePool.toLocaleString()}</p>
+        </Surface>
+        <Surface className="p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider text-bp-muted">Called</p>
+          <p className="mt-1 text-xl font-bold text-bp-text">{calledNumbers.length}/75</p>
+        </Surface>
+      </div>
 
-      {/* Game over banner */}
-      {gameOverStatus && (
-        <div className={`mb-4 px-4 py-3 rounded-lg text-center font-bold text-lg ${
-          gameOverStatus.won
-            ? 'bg-yellow-900/30 border border-yellow-600 text-yellow-200'
-            : 'bg-zinc-800 border border-zinc-600 text-zinc-300'
-        }`}>
-          {gameOverStatus.won ? '🎉 Congratulations! You won! 🎉' : 'Game Over'}
+      {isConnecting && (
+        <div className="mt-3 rounded-xl border border-bp-primary/30 bg-bp-primary/10 px-4 py-2 text-sm text-bp-primary">
+          Connecting...
+        </div>
+      )}
+      {stateLoading && !gameState && (
+        <div className="mt-3 rounded-xl bg-bp-surface px-4 py-2 text-sm text-bp-muted">Loading...</div>
+      )}
+
+      {lastCalledNumber && isLive && (
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-bp-muted">Called Numbers</p>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {calledNumbers.slice(-12).map((n) => (
+              <span
+                key={n.id}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-bp-danger/40 bg-bp-danger/20 text-sm font-bold text-red-200"
+              >
+                {formatNumber(n.number)}
+              </span>
+            ))}
+          </div>
+          {lastCalledNumber && (
+            <p className="text-center text-2xl font-black text-bp-text">
+              {numberToLetter(lastCalledNumber)}-{lastCalledNumber}
+            </p>
+          )}
         </div>
       )}
 
-      {/* Registration prompt */}
-      {gameStatus === GameStatus.REGISTRATION_OPEN && !hasCard && (
-        <div className="mb-4 p-6 bg-zinc-800 rounded-xl text-center">
-          <p className="mb-3 text-zinc-300">Registration is open. Join to get your bingo card!</p>
-          <p className="text-sm text-zinc-500 mb-4">Entry Fee: {game?.entryFee ?? '?'} coins</p>
-          <button
-            onClick={handleRegister}
-            disabled={registering}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-lg font-semibold cursor-pointer disabled:opacity-50 hover:bg-emerald-700"
-          >
-            {registering ? 'Joining...' : 'Join Game'}
-          </button>
-        </div>
-      )}
-
-      {/* Claim message */}
       {claimMessage && (
-        <div className="mb-4 px-4 py-3 bg-amber-900/30 border border-amber-600 rounded-lg text-amber-200">
+        <div className="mt-3 rounded-xl border border-bp-warning/40 bg-bp-warning/15 px-4 py-2 text-sm text-amber-200">
           {claimMessage}
         </div>
       )}
-
       {error && (
-        <div className="mb-4 px-4 py-3 bg-rose-900/30 border border-rose-600 rounded-lg text-rose-200">
+        <div className="mt-3 rounded-xl border border-bp-danger/40 bg-bp-danger/15 px-4 py-2 text-sm text-red-200">
           {error}
         </div>
       )}
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left column - Card */}
-        <div className="flex-1 space-y-4">
-          {/* Last Number Called */}
-          {lastCalledNumber && gameStatus === GameStatus.IN_PROGRESS && (
-            <div className="bg-zinc-800 rounded-xl p-4 text-center">
-              <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Last Number</p>
-              <div className={`text-4xl sm:text-5xl font-black text-white ${pulseClass}`}>
-                {formatNumber(lastCalledNumber)}
-              </div>
-            </div>
-          )}
-
-          {/* The Bingo Card */}
-          {hasCard && playerCard ? (
-            <>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">Your Card</h2>
-                <span className="text-sm text-zinc-400">
-                  {progress.marks}/{progress.total} marks
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 bg-zinc-700 rounded-full h-2">
-                  <div
-                    className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-              </div>
-              <BingoCard numbers={playerCard} calledNumbers={calledSet} />
-            </>
-          ) : gameStatus !== GameStatus.REGISTRATION_OPEN && !stateLoading ? (
-            <div className="p-6 bg-zinc-800 rounded-xl text-center text-zinc-500">
-              No card assigned for this game.
-            </div>
-          ) : null}
-
-          {/* BINGO Button */}
-          {gameStatus === GameStatus.IN_PROGRESS && hasCard && (
-            <button
-              onClick={handleClaim}
-              disabled={isClaiming}
-              className={`w-full py-4 bg-rose-600 text-white rounded-xl text-2xl font-black cursor-pointer disabled:opacity-50 hover:bg-rose-700 transition-all ${
-                !isClaiming ? 'hover:scale-105 active:scale-95' : ''
-              }`}
-            >
-              {isClaiming ? 'Checking...' : '🎯 BINGO!'}
-            </button>
-          )}
-
-          {gameStatus === GameStatus.CLAIM_PENDING && (
-            <div className="p-4 bg-amber-900/30 border border-amber-600 rounded-xl text-amber-200 text-center">
-              <p className="font-semibold">Claim Pending Review</p>
-              <p className="text-sm mt-1">An admin is verifying your BINGO claim. Please wait...</p>
-            </div>
-          )}
+      {gameOver && (
+        <div
+          className={`mt-3 rounded-xl border px-4 py-2 text-center text-sm font-semibold ${
+            gameOver.won
+              ? 'border-bp-success/40 bg-bp-success/15 text-emerald-300'
+              : 'border-bp-border bg-bp-surface text-bp-muted'
+          }`}
+        >
+          {gameOver.won ? 'You won!' : 'Game over'}
         </div>
+      )}
 
-        {/* Right column - Number Board & Called Numbers */}
-        <div className="w-full lg:w-80 space-y-4">
-          <div className="hidden sm:block">
-            <NumberBoard calledNumbers={calledSet} />
-          </div>
+      <div className="mt-4">
+        {gameStatus === GameStatus.REGISTRATION_OPEN && !hasCard && (
+          <Surface className="p-4 text-center">
+            <p className="text-sm text-bp-muted">Registration is open</p>
+            <p className="mt-1 text-lg font-bold text-bp-gold">Entry: {game?.entryFee ?? '?'} coins</p>
+            <ActionButton variant="primary" onClick={handleRegister} disabled={registering} className="mt-4 w-full">
+              {registering ? 'Joining...' : 'Join Game'}
+            </ActionButton>
+          </Surface>
+        )}
 
-          {/* Called numbers history (collapsible on mobile) */}
-          <details className="bg-zinc-800 rounded-xl p-3" open>
-            <summary className="font-semibold text-sm cursor-pointer text-zinc-300">
-              Called Numbers ({calledNumbers.length}/75)
-            </summary>
-            <div className="flex flex-wrap gap-1.5 mt-3 max-h-48 overflow-y-auto">
-              {calledNumbers.map((n) => (
-                <span
-                  key={n.id}
-                  className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-xs font-mono"
-                >
-                  {formatNumber(n.number)}
-                </span>
-              ))}
+        {hasCard && playerCard && (
+          <>
+            <BingoCard numbers={playerCard} calledNumbers={calledSet} />
+            <div className="mt-3 flex items-center justify-between gap-4 text-sm">
+              <label className="flex items-center gap-2 text-bp-muted">
+                <input
+                  type="checkbox"
+                  checked={autoDaub}
+                  onChange={(e) => setAutoDaub(e.target.checked)}
+                  className="rounded border-bp-border"
+                />
+                Auto Daub
+              </label>
+              <label className="flex items-center gap-2 text-bp-muted">
+                <input type="checkbox" defaultChecked className="rounded border-bp-border" />
+                Sound
+              </label>
             </div>
-          </details>
-        </div>
+          </>
+        )}
       </div>
+
+      {isLive && hasCard && (
+        <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-lg px-4">
+          <ActionButton
+            onClick={handleClaim}
+            disabled={isClaiming}
+            variant="danger"
+            className="w-full py-4 text-lg font-black tracking-widest shadow-[0_0_24px_rgba(235,87,87,0.4)]"
+          >
+            {isClaiming ? 'CHECKING...' : 'BINGO!'}
+          </ActionButton>
+        </div>
+      )}
     </ProtectedRoute>
   );
 }

@@ -5,28 +5,27 @@ interface BingoCardProps {
 }
 
 const letters = ['B', 'I', 'N', 'G', 'O'];
-
-function numberToLetter(n: number): string {
-  if (n >= 1 && n <= 15) return 'B';
-  if (n >= 16 && n <= 30) return 'I';
-  if (n >= 31 && n <= 45) return 'N';
-  if (n >= 46 && n <= 60) return 'G';
-  if (n >= 61 && n <= 75) return 'O';
-  return '';
-}
+const letterColors = [
+  'bg-bp-primary/20 text-bp-primary',
+  'bg-bp-success/20 text-emerald-300',
+  'bg-bp-warning/20 text-amber-300',
+  'bg-bp-gold/20 text-bp-gold',
+  'bg-bp-danger/20 text-red-300',
+];
 
 export function BingoCard({ numbers, calledNumbers, isWinner }: BingoCardProps) {
   return (
-    <div className="inline-block bg-white rounded-xl shadow-lg p-3">
-      <div className="grid grid-cols-5 gap-1">
-        {letters.map((letter) => (
+    <div className="w-full rounded-2xl border border-bp-border bg-bp-bg p-3">
+      <div className="grid grid-cols-5 gap-1.5">
+        {letters.map((letter, index) => (
           <div
             key={letter}
-            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center font-bold text-lg text-rose-600 bg-rose-50 rounded"
+            className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold tracking-wider ${letterColors[index]}`}
           >
             {letter}
           </div>
         ))}
+
         {numbers.map((row, ri) =>
           row.map((num, ci) => {
             const isCalled = calledNumbers.has(num);
@@ -34,12 +33,12 @@ export function BingoCard({ numbers, calledNumbers, isWinner }: BingoCardProps) 
             return (
               <div
                 key={`${ri}-${ci}`}
-                className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-base font-semibold rounded transition-colors duration-200 ${
+                className={`flex aspect-square items-center justify-center rounded-lg border text-sm font-semibold transition ${
                   isFree
-                    ? 'bg-yellow-400 text-yellow-900'
+                    ? 'border-bp-gold/50 bg-bp-gold/20 text-bp-gold'
                     : isCalled
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-zinc-100 text-zinc-700'
+                      ? 'border-bp-danger/50 bg-bp-danger text-white shadow-[0_0_12px_rgba(235,87,87,0.4)]'
+                      : 'border-bp-border bg-bp-surface-elevated text-bp-text'
                 }`}
               >
                 {isFree ? '★' : num}
@@ -48,9 +47,10 @@ export function BingoCard({ numbers, calledNumbers, isWinner }: BingoCardProps) 
           })
         )}
       </div>
+
       {isWinner && (
-        <div className="text-center mt-3 text-rose-600 font-bold text-lg animate-pulse">
-          🎉 BINGO! 🎉
+        <div className="mt-3 rounded-xl border border-bp-success/40 bg-bp-success/15 px-4 py-3 text-center text-sm font-semibold text-emerald-300">
+          Bingo confirmed!
         </div>
       )}
     </div>

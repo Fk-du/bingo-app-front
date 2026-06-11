@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role } from '@/types/enums';
 import { useFundRequests, useCreateFundRequest } from '@/hooks/useAgents';
+import { ActionButton, EmptyState, Field, SectionHeader, Surface, StatusPill, TextField } from '@/components/ui/Surface';
 
 export default function FundRequestsPage() {
   const { data: requests, isLoading } = useFundRequests();
@@ -18,39 +19,70 @@ export default function FundRequestsPage() {
 
   return (
     <ProtectedRoute roles={[Role.ADMIN]}>
-      <h1 className="text-2xl font-bold mb-4">Fund Requests</h1>
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount"
-          required
-          min="0"
-          className="p-2 border border-zinc-300 rounded dark:bg-zinc-800 dark:border-zinc-600"
-        />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-rose-600 text-white px-4 py-2 rounded cursor-pointer disabled:opacity-50"
-        >
-          {isPending ? 'Requesting...' : 'Request Funds'}
-        </button>
-      </form>
-      {isLoading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="space-y-2">
-          {requests?.map((req: any) => (
-            <div key={req.id} className="bg-white dark:bg-zinc-800 p-3 rounded-lg shadow flex justify-between items-center">
-              <div>
-                <strong>{req.amount} coins</strong>
-                <span className="ml-2 text-sm text-zinc-500">{req.status}</span>
-              </div>
+      <SectionHeader
+        eyebrow="Fund requests"
+        title="Agent funding queue"
+        description="Request operating funds from the super admin side."
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+        <Surface className="p-4">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">New request</p>
+          <h2 className="mt-1 text-lg font-semibold text-slate-100">Request funds</h2>
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <Field label="Amount">
+              <TextField
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Amount"
+                required
+                min="0"
+              />
+            </Field>
+            <ActionButton type="submit" disabled={isPending} className="w-full">
+              {isPending ? 'Requesting...' : 'Request funds'}
+            </ActionButton>
+          </form>
+        </Surface>
+
+        <Surface className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">History</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-100">Fund requests</h2>
             </div>
-          ))}
-        </div>
-      )}
+            <span className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-1 text-xs font-semibold text-slate-300">
+              {requests?.length ?? 0}
+            </span>
+          </div>
+          <div className="mt-4 space-y-2">
+            {isLoading ? (
+              <div className="space-y-2">
+                <div className="h-16 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
+                <div className="h-16 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
+              </div>
+            ) : requests?.length ? (
+              requests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-center justify-between rounded-[18px] border border-slate-800 bg-slate-900/60 px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-100">{req.amount} coins</p>
+                    <div className="mt-2">
+                      <StatusPill status={req.status} />
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleDateString()}</span>
+                </div>
+              ))
+            ) : (
+              <EmptyState title="No fund requests" description="New requests will appear here." />
+            )}
+          </div>
+        </Surface>
+      </div>
     </ProtectedRoute>
   );
 }

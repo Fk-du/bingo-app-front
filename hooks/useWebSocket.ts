@@ -3,6 +3,7 @@ import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useGameStore } from '@/store/game.store';
 import { CalledNumberResponse, GameStatus, BingoClaimResponse } from '@/types';
+import { getWsBaseUrl } from '@/lib/backend';
 
 interface GameEvent {
   type: 'NUMBER_CALLED' | 'GAME_STATUS_CHANGED' | 'CLAIM_PENDING' | 'CLAIM_RESOLVED';
@@ -12,13 +13,7 @@ interface GameEvent {
 export function useGameWebSocket(gameId: number | null) {
   const clientRef = useRef<Client | null>(null);
   const {
-    addCalledNumber,
-    setGameStatus,
-    setCalledNumbers,
-    setTotalNumbersCalled,
-    setPrizePool,
     setConnecting,
-    setClaimPending,
     reset,
   } = useGameStore();
 
@@ -28,7 +23,7 @@ export function useGameWebSocket(gameId: number | null) {
     setConnecting(true);
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('/ws'),
+      webSocketFactory: () => new SockJS(getWsBaseUrl()),
       reconnectDelay: 5000,
       onConnect: () => {
         setConnecting(false);
@@ -53,9 +48,7 @@ export function useGameWebSocket(gameId: number | null) {
       reset();
       client.deactivate();
     };
-  }, [gameId]);
-
-  return clientRef.current;
+  }, [gameId, reset, setConnecting]);
 }
 
 function handleGameEvent(event: GameEvent) {

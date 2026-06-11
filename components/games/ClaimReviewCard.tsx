@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { BingoClaimResponse } from '@/types';
+import { ActionButton, Field, Surface } from '@/components/ui/Surface';
 import { BingoCard } from './BingoCard';
 
 interface ClaimReviewCardProps {
@@ -36,7 +37,14 @@ function formatTimestamp(ts: string | null): string {
   return new Date(ts).toLocaleString();
 }
 
-export function ClaimReviewCard({ claim, index, remainingSlots, onApprove, onReject, isProcessing }: ClaimReviewCardProps) {
+export function ClaimReviewCard({
+  claim,
+  index,
+  remainingSlots,
+  onApprove,
+  onReject,
+  isProcessing,
+}: ClaimReviewCardProps) {
   const [reason, setReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
   const cardNumbers = parseCardSnapshot(claim.cardSnapshot);
@@ -51,91 +59,92 @@ export function ClaimReviewCard({ claim, index, remainingSlots, onApprove, onRej
   }
 
   return (
-    <div className="border border-amber-400/40 bg-amber-900/10 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+    <Surface className="p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <span className="font-bold text-amber-200 text-lg">Claim #{index}</span>
-          <span className="ml-3 text-sm text-zinc-400">ID: {claim.id}</span>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">Claim</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-100">#{index}</h3>
+          <p className="mt-1 text-sm text-slate-400">ID {claim.id}</p>
         </div>
-        <span className="text-sm text-zinc-400">
-          Player #{claim.playerId} &middot; {formatTimestamp(claim.claimedAt)}
-        </span>
+        <div className="text-right text-sm text-slate-400">
+          <p>Player #{claim.playerId}</p>
+          <p>{formatTimestamp(claim.claimedAt)}</p>
+        </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Card visualization */}
-        <div>
-          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Player Card</p>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Player card</p>
           <BingoCard numbers={cardNumbers} calledNumbers={calledNumbers} />
         </div>
 
-        {/* Called numbers at claim time */}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">
-            Numbers Called at Claim ({calledNumbers.size}/75)
-          </p>
-          <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-            {[...calledNumbers].sort((a, b) => a - b).map((n) => (
-              <span
-                key={n}
-                className="px-1.5 py-0.5 bg-zinc-700 text-zinc-200 rounded text-xs font-mono"
-              >
-                {n}
+        <div className="space-y-3">
+          <div className="rounded-[22px] border border-slate-800 bg-slate-950/70 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                Called at claim ({calledNumbers.size}/75)
+              </p>
+              <span className="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-xs font-semibold text-slate-200">
+                {marks}/{total} marked
               </span>
-            ))}
+            </div>
+            <div className="mt-3 flex max-h-36 flex-wrap gap-1.5 overflow-y-auto">
+              {[...calledNumbers].sort((a, b) => a - b).map((n) => (
+                <span
+                  key={n}
+                  className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-200"
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
           </div>
-          <p className="mt-2 text-sm text-zinc-400">
-            {marks}/{total} card numbers matched
-          </p>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-4 flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => onApprove(claim.id)}
-          disabled={isProcessing}
-          className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold cursor-pointer disabled:opacity-50 hover:bg-emerald-700 text-sm"
-        >
-          {remainingSlots <= 1 ? 'Approve & Pay (last slot)' : `Approve & Pay (${remainingSlots} slots left)`}
-        </button>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <ActionButton variant="success" onClick={() => onApprove(claim.id)} disabled={isProcessing}>
+          {remainingSlots <= 1 ? 'Approve & Pay final slot' : `Approve & Pay (${remainingSlots} left)`}
+        </ActionButton>
 
         {!showRejectInput ? (
-          <button
-            onClick={() => setShowRejectInput(true)}
-            disabled={isProcessing}
-            className="px-5 py-2 bg-rose-600 text-white rounded-lg font-semibold cursor-pointer disabled:opacity-50 hover:bg-rose-700 text-sm"
-          >
+          <ActionButton variant="danger" onClick={() => setShowRejectInput(true)} disabled={isProcessing}>
             Reject
-          </button>
+          </ActionButton>
         ) : (
-          <div className="flex items-center gap-2 flex-wrap">
-            <input
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Rejection reason..."
-              className="px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-sm text-white w-48"
-            />
-            <button
+          <div className="flex flex-1 flex-wrap items-end gap-2">
+            <Field label="Rejection reason" hint="Optional but recommended for audit trails">
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Reason"
+                className="w-full min-w-[220px] rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+              />
+            </Field>
+            <ActionButton
+              variant="danger"
               onClick={() => {
                 onReject(claim.id, reason || undefined);
                 setShowRejectInput(false);
+                setReason('');
               }}
               disabled={isProcessing}
-              className="px-4 py-2 bg-rose-600 text-white rounded-lg font-semibold cursor-pointer disabled:opacity-50 hover:bg-rose-700 text-sm"
             >
-              Confirm Reject
-            </button>
-            <button
-              onClick={() => setShowRejectInput(false)}
-              className="px-4 py-2 bg-zinc-700 text-white rounded-lg cursor-pointer hover:bg-zinc-600 text-sm"
+              Confirm reject
+            </ActionButton>
+            <ActionButton
+              variant="ghost"
+              onClick={() => {
+                setShowRejectInput(false);
+                setReason('');
+              }}
             >
               Cancel
-            </button>
+            </ActionButton>
           </div>
         )}
       </div>
-    </div>
+    </Surface>
   );
 }

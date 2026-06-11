@@ -1,26 +1,100 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bp-bg: #0b0e1b;
+  --bp-surface: #161b30;
+  --bp-surface-elevated: #1c2240;
+  --bp-border: #2a3050;
+  --bp-primary: #5d5fef;
+  --bp-primary-hover: #6e70ff;
+  --bp-gold: #f2c94c;
+  --bp-gold-dim: #c9a832;
+  --bp-success: #27ae60;
+  --bp-danger: #eb5757;
+  --bp-warning: #f2994a;
+  --bp-text: #f1f3f9;
+  --bp-text-muted: #8b93b0;
+  --background: var(--bp-bg);
+  --foreground: var(--bp-text);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bp-bg: var(--bp-bg);
+  --color-bp-surface: var(--bp-surface);
+  --color-bp-surface-elevated: var(--bp-surface-elevated);
+  --color-bp-border: var(--bp-border);
+  --color-bp-primary: var(--bp-primary);
+  --color-bp-gold: var(--bp-gold);
+  --color-bp-success: var(--bp-success);
+  --color-bp-danger: var(--bp-danger);
+  --color-bp-warning: var(--bp-warning);
+  --color-bp-muted: var(--bp-text-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(93, 95, 239, 0.12), transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(242, 201, 76, 0.06), transparent 40%),
+    var(--bp-bg);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(93, 95, 239, 0.35);
+  color: #fff;
+}
+
+* {
+  scrollbar-color: rgba(139, 147, 176, 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(139, 147, 176, 0.35);
+}
+
+.bp-gold-text {
+  color: var(--bp-gold);
+}
+
+.bp-jackpot-banner {
+  background: linear-gradient(135deg, #1c2240 0%, #2a1f5e 50%, #1c2240 100%);
+  border: 1px solid rgba(242, 201, 76, 0.25);
+}
+
+.bp-live-badge {
+  background: rgba(235, 87, 87, 0.15);
+  border: 1px solid rgba(235, 87, 87, 0.4);
+  color: #ff6b6b;
+}
+
+.bp-tab-active {
+  background: var(--bp-primary);
+  color: #fff;
+}
+
+.bp-tab-inactive {
+  background: var(--bp-surface-elevated);
+  color: var(--bp-text-muted);
 }

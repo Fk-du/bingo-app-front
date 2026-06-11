@@ -1,5 +1,12 @@
 import Link from 'next/link';
 import { GameResponse, GameStatus } from '@/types';
+import { ActionButton, EmptyState, LiveBadge, Surface, StatusPill } from '@/components/ui/Surface';
+
+const GAME_NAMES = ['Mega Bingo', 'Happy Hour', 'Night Owl', 'Golden Draw', 'Turbo Round', 'Classic 75'];
+
+function gameDisplayName(id: number): string {
+  return GAME_NAMES[id % GAME_NAMES.length];
+}
 
 interface GameListProps {
   games: GameResponse[];
@@ -12,62 +19,124 @@ interface GameListProps {
 
 export function GameList({ games, role, onStart, onCancel, onEnd, onRegister }: GameListProps) {
   if (!games.length) {
-    return <p style={{ color: '#666' }}>No games available.</p>;
+    return (
+      <EmptyState
+        title="No games available"
+        description="New games will appear here when your agent opens registration."
+      />
+    );
+  }
+
+  if (role === 'player') {
+    return (
+      <div className="space-y-3">
+        {games.map((game) => (
+          <PlayerGameCard key={game.id} game={game} onRegister={onRegister} />
+        ))}
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="space-y-3">
       {games.map((game) => (
-        <div key={game.id} style={{ background: '#fff', borderRadius: 8, padding: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <Link href={role === 'admin' ? `/admin/games/${game.id}` : `/player/game/${game.id}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}>
-                <strong>Game #{game.id}</strong>
-              </Link>
-              <span style={{ marginLeft: 12, padding: '2px 8px', borderRadius: 4, fontSize: 12, background: statusColor(game.status), color: '#fff' }}>
-                {game.status}
-              </span>
+        <Surface key={game.id} className="p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/admin/games/${game.id}`}
+                  className="text-base font-semibold text-bp-text transition hover:text-bp-primary"
+                >
+                  {gameDisplayName(game.id)} #{game.id}
+                </Link>
+                {game.status === GameStatus.IN_PROGRESS ? (
+                  <LiveBadge />
+                ) : (
+                  <StatusPill status={game.status} />
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-sm text-bp-muted">
+                <span className="rounded-full border border-bp-border bg-bp-bg px-3 py-1">
+                  Fee {game.entryFee}
+                </span>
+                <span className="rounded-full border border-bp-gold/30 bg-bp-gold/10 px-3 py-1 text-bp-gold">
+                  Pool {game.prizePool.toLocaleString()}
+                </span>
+                <span className="rounded-full border border-bp-border bg-bp-bg px-3 py-1">
+                  Max {game.maxPlayers} players
+                </span>
+              </div>
             </div>
-            <div style={{ fontSize: 14, color: '#666' }}>
-              Fee: {game.entryFee} | Pool: {game.prizePool}
+
+            <div className="flex flex-wrap gap-2">
+              {game.status === GameStatus.REGISTRATION_OPEN && onStart && (
+                <ActionButton variant="success" onClick={() => onStart(game.id)}>
+                  Start
+                </ActionButton>
+              )}
+              {game.status === GameStatus.REGISTRATION_OPEN && onCancel && (
+                <ActionButton variant="danger" onClick={() => onCancel(game.id)}>
+                  Cancel
+                </ActionButton>
+              )}
+              {game.status === GameStatus.IN_PROGRESS && onEnd && (
+                <ActionButton variant="danger" onClick={() => onEnd(game.id)}>
+                  End Game
+                </ActionButton>
+              )}
             </div>
           </div>
-          <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-            {role === 'admin' && game.status === GameStatus.REGISTRATION_OPEN && onStart && (
-              <button onClick={() => onStart(game.id)} style={btnStyle}>Start</button>
-            )}
-            {role === 'admin' && game.status === GameStatus.REGISTRATION_OPEN && onCancel && (
-              <button onClick={() => onCancel(game.id)} style={{ ...btnStyle, background: '#e94560' }}>Cancel</button>
-            )}
-            {role === 'admin' && game.status === GameStatus.IN_PROGRESS && onEnd && (
-              <button onClick={() => onEnd(game.id)} style={{ ...btnStyle, background: '#e94560' }}>End</button>
-            )}
-            {role === 'player' && game.status === GameStatus.REGISTRATION_OPEN && onRegister && (
-              <button onClick={() => onRegister(game.id)} style={btnStyle}>Register</button>
-            )}
-          </div>
-        </div>
+        </Surface>
       ))}
     </div>
   );
 }
 
-function statusColor(status: GameStatus): string {
-  switch (status) {
-    case GameStatus.REGISTRATION_OPEN: return '#4ecca3';
-    case GameStatus.IN_PROGRESS: return '#2196f3';
-    case GameStatus.CLAIM_PENDING: return '#ff9800';
-    case GameStatus.ENDED: return '#666';
-  }
-}
+function PlayerGameCard({
+  game,
+  onRegister,
+}: {
+  game: GameResponse;
+  onRegister?: (id: number) => void;
+}) {
+  const isLive = game.status === GameStatus.IN_PROGRESS;
+  const isOpen = game.status === GameStatus.REGISTRATION_OPEN;
 
-const btnStyle: React.CSSProperties = {
-  background: '#4ecca3',
-  color: '#fff',
-  border: 'none',
-  padding: '6px 12px',
-  borderRadius: 4,
-  cursor: 'pointer',
-  fontSize: 13,
-};
+  return (
+    <Surface className="overflow-hidden p-0">
+      <div className="flex gap-3 p-3">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-bp-primary/40 to-bp-primary/10 text-2xl">
+          🎱
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <Link href={`/player/game/${game.id}`} className="font-semibold text-bp-text hover:text-bp-primary">
+              {gameDisplayName(game.id)}
+            </Link>
+            {isLive ? <LiveBadge /> : isOpen ? <StatusPill status={game.status} /> : <StatusPill status={game.status} />}
+          </div>
+          <p className="mt-1 text-lg font-bold text-bp-gold">{game.prizePool.toLocaleString()} coins</p>
+          <div className="mt-1 flex flex-wrap gap-3 text-xs text-bp-muted">
+            <span>Entry {game.entryFee}</span>
+            <span>Max {game.maxPlayers} players</span>
+          </div>
+        </div>
+      </div>
+      {(isOpen || isLive) && (
+        <div className="flex gap-2 border-t border-bp-border p-3">
+          <Link href={`/player/game/${game.id}`} className="flex-1">
+            <ActionButton variant={isLive ? 'danger' : 'primary'} className="w-full">
+              {isLive ? 'Join Live' : 'View Game'}
+            </ActionButton>
+          </Link>
+          {isOpen && onRegister && (
+            <ActionButton variant="gold" onClick={() => onRegister(game.id)} className="flex-1">
+              Register
+            </ActionButton>
+          )}
+        </div>
+      )}
+    </Surface>
+  );
+}

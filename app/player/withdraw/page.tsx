@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role } from '@/types/enums';
 import { useCreateWithdrawal } from '@/hooks/useWithdrawals';
+import { ActionButton, Field, SectionHeader, Surface, TextField } from '@/components/ui/Surface';
 
 export default function WithdrawPage() {
   const [amount, setAmount] = useState('');
@@ -19,37 +20,36 @@ export default function WithdrawPage() {
 
   return (
     <ProtectedRoute roles={[Role.PLAYER]}>
-      <h1 className="text-xl font-bold mb-4">Withdraw</h1>
-      <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
-        <div>
-          <label className="block mb-1 text-sm">Amount</label>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-            min="1"
-            className="w-full p-2 border border-zinc-600 rounded bg-zinc-800 text-white"
-          />
-        </div>
-        <div>
-          <label className="block mb-1 text-sm">Payout Details (optional)</label>
-          <input
-            type="text"
-            value={payoutDetails}
-            onChange={(e) => setPayoutDetails(e.target.value)}
-            className="w-full p-2 border border-zinc-600 rounded bg-zinc-800 text-white"
-            placeholder="Bank account, crypto address, etc."
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="bg-rose-600 text-white px-4 py-2 rounded cursor-pointer disabled:opacity-50"
-        >
-          {isPending ? 'Submitting...' : 'Request Withdrawal'}
-        </button>
-      </form>
+      <SectionHeader
+        eyebrow="Withdraw"
+        title="Payout request"
+        description="Submit a withdrawal without leaving the player experience."
+      />
+
+      <Surface className="max-w-2xl p-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Amount">
+            <TextField
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+              min="1"
+            />
+          </Field>
+          <Field label="Payout details" hint="Bank account, mobile money, or crypto address">
+            <TextField
+              type="text"
+              value={payoutDetails}
+              onChange={(e) => setPayoutDetails(e.target.value)}
+              placeholder="Optional"
+            />
+          </Field>
+          <ActionButton type="submit" disabled={isPending} variant="danger" className="w-full">
+            {isPending ? 'Submitting...' : 'Request withdrawal'}
+          </ActionButton>
+        </form>
+      </Surface>
     </ProtectedRoute>
   );
 }
