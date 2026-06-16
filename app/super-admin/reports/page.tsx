@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role } from '@/types/enums';
 import { useRevenueReport, useGamesReport } from '@/hooks/useReports';
 import { GameStatus } from '@/types';
+import { EmptyState, MetricCard, SectionHeader, StatusPill, Surface } from '@/components/ui/Surface';
 
 export default function ReportsPage() {
   const { data: revenue, isLoading: loadingRevenue } = useRevenueReport();
@@ -15,72 +16,77 @@ export default function ReportsPage() {
 
   return (
     <ProtectedRoute roles={[Role.SUPER_ADMIN]}>
-      <h1 className="text-2xl font-bold mb-4">Reports</h1>
+      <SectionHeader
+        eyebrow="Reports"
+        title="Revenue &amp; game history"
+        description="Platform-wide earnings and completed game log."
+      />
 
-      {/* Revenue Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow">
-          <h3 className="font-semibold text-sm">Total Revenue</h3>
-          <p className="text-2xl font-bold mt-2">
-            {loadingRevenue ? '...' : revenue ? String(revenue.totalRevenue ?? revenue) : '0'}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow">
-          <h3 className="font-semibold text-sm">Total Games</h3>
-          <p className="text-2xl font-bold mt-2">{loadingGames ? '...' : games?.length ?? '0'}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow">
-          <h3 className="font-semibold text-sm">Completed Games</h3>
-          <p className="text-2xl font-bold mt-2">{endedGames.length}</p>
-        </div>
-        <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow">
-          <h3 className="font-semibold text-sm">Total Entry Fees</h3>
-          <p className="text-2xl font-bold mt-2">{totalFees}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <MetricCard
+          label="Total Revenue"
+          value={loadingRevenue ? '...' : revenue?.balance?.toLocaleString() ?? '0'}
+          accent="gold"
+        />
+        <MetricCard
+          label="Total Games"
+          value={loadingGames ? '...' : games?.length ?? '0'}
+          accent="primary"
+        />
+        <MetricCard
+          label="Completed Games"
+          value={endedGames.length}
+          accent="success"
+        />
+        <MetricCard
+          label="Total Entry Fees"
+          value={totalFees}
+          accent="slate"
+        />
       </div>
 
-      {/* Game History Table */}
-      <h3 className="font-semibold mb-3">Game History</h3>
+      <SectionHeader
+        eyebrow="History"
+        title="Game History"
+        description="All games played across the platform."
+      />
+
       {loadingGames ? (
-        <p>Loading...</p>
+        <div className="space-y-2">
+          <div className="h-12 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
+          <div className="h-12 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
+        </div>
       ) : !games || games.length === 0 ? (
-        <p className="text-zinc-500">No games found.</p>
+        <EmptyState title="No games found" description="Games will appear here once they are created." />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm bg-white dark:bg-zinc-800 rounded-lg shadow">
+        <Surface className="overflow-x-auto p-0">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-700 text-left">
-                <th className="p-3 font-semibold">ID</th>
-                <th className="p-3 font-semibold">Status</th>
-                <th className="p-3 font-semibold">Entry Fee</th>
-                <th className="p-3 font-semibold">Prize Pool</th>
-                <th className="p-3 font-semibold">Max Players</th>
-                <th className="p-3 font-semibold">Created</th>
+              <tr className="border-b border-bp-border text-left text-[11px] uppercase tracking-[0.18em] text-bp-muted">
+                <th className="p-4 font-semibold">ID</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold">Entry Fee</th>
+                <th className="p-4 font-semibold">Prize Pool</th>
+                <th className="p-4 font-semibold">Max Players</th>
+                <th className="p-4 font-semibold">Created</th>
               </tr>
             </thead>
             <tbody>
               {games.map((game) => (
-                <tr key={game.id} className="border-b border-zinc-200 dark:border-zinc-700">
-                  <td className="p-3">#{game.id}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded text-xs text-white ${
-                      game.status === GameStatus.ENDED ? 'bg-zinc-500' :
-                      game.status === GameStatus.IN_PROGRESS ? 'bg-blue-500' :
-                      game.status === GameStatus.CLAIM_PENDING ? 'bg-amber-500' :
-                      'bg-emerald-500'
-                    }`}>
-                      {game.status}
-                    </span>
+                <tr key={game.id} className="border-b border-bp-border/50 last:border-0">
+                  <td className="p-4 text-bp-text">#{game.id}</td>
+                  <td className="p-4">
+                    <StatusPill status={game.status} />
                   </td>
-                  <td className="p-3">{game.entryFee}</td>
-                  <td className="p-3">{game.prizePool}</td>
-                  <td className="p-3">{game.maxPlayers}</td>
-                  <td className="p-3">{new Date(game.createdAt).toLocaleDateString()}</td>
+                  <td className="p-4 text-bp-text">{game.entryFee}</td>
+                  <td className="p-4 text-bp-text">{game.prizePool}</td>
+                  <td className="p-4 text-bp-text">{game.maxPlayers}</td>
+                  <td className="p-4 text-bp-muted">{new Date(game.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Surface>
       )}
     </ProtectedRoute>
   );

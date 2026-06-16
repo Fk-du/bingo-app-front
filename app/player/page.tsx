@@ -6,6 +6,7 @@ import { Role, GameStatus } from '@/types/enums';
 import { useActiveGames, useRegisterForGame } from '@/hooks/useGames';
 import { GameList } from '@/components/games/GameList';
 import { TabBar } from '@/components/ui/Surface';
+import { IconCoin } from '@/components/ui/Icons';
 
 type LobbyTab = 'all' | 'upcoming' | 'my';
 
@@ -32,18 +33,30 @@ export default function PlayerGamesPage() {
     return games;
   }, [games, tab]);
 
+  const activeCount = games?.filter(g => g.status === GameStatus.IN_PROGRESS).length ?? 0;
+
   return (
     <ProtectedRoute roles={[Role.PLAYER]}>
-      <div className="bp-jackpot-banner mb-4 overflow-hidden rounded-2xl p-4">
-        <div className="flex items-center justify-between">
+      <div className="bp-jackpot-banner mb-4 overflow-hidden rounded-2xl p-4 bp-glow-pulse relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-bp-gold/5 via-transparent to-bp-primary/5" />
+        <div className="relative flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-bp-gold/80">Jackpot</p>
-            <p className="mt-1 text-3xl font-black text-bp-gold">
-              {jackpotTotal > 0 ? jackpotTotal.toLocaleString() : '50,000'}
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-bp-gold/90">Jackpot Pool</p>
+            <p className="mt-1 text-3xl font-black text-bp-gold drop-shadow-[0_0_12px_rgba(242,201,76,0.3)]">
+              {(jackpotTotal > 0 ? jackpotTotal : 50000).toLocaleString()}
             </p>
-            <p className="mt-0.5 text-xs text-bp-muted">Total prize pool across active games</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="bp-live-badge inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bp-danger" />
+                {activeCount} live
+              </span>
+              <span className="text-xs text-bp-muted">{games?.length ?? 0} games available</span>
+            </div>
           </div>
-          <div className="text-4xl opacity-80">🎉</div>
+          <div className="flex flex-col items-center gap-1">
+            <IconCoin className="h-10 w-10 text-bp-gold drop-shadow-[0_0_8px_rgba(242,201,76,0.4)]" />
+            <span className="text-[10px] text-bp-gold/60 font-medium uppercase tracking-wider">Total Pool</span>
+          </div>
         </div>
       </div>
 
@@ -60,8 +73,8 @@ export default function PlayerGamesPage() {
       <div className="mt-4">
         {isLoading ? (
           <div className="space-y-3">
-            <div className="h-28 animate-pulse rounded-2xl bg-bp-surface" />
-            <div className="h-28 animate-pulse rounded-2xl bg-bp-surface" />
+            <div className="h-32 animate-pulse rounded-2xl bg-bp-surface" />
+            <div className="h-32 animate-pulse rounded-2xl bg-bp-surface" />
           </div>
         ) : (
           <GameList games={filteredGames} role="player" onRegister={register} />

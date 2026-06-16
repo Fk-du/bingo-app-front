@@ -1,7 +1,6 @@
 import apiClient from './client';
 import {
   ApiResponse,
-  UserProfileResponse,
   AgentResponse,
   AgentFundRequestResponse,
   InviteCodeResponse,
@@ -13,7 +12,7 @@ import {
 
 export const agentsApi = {
   list: async () => {
-    const res = await apiClient.get<ApiResponse<UserProfileResponse[]>>('/agents');
+    const res = await apiClient.get<ApiResponse<AgentResponse[]>>('/agents');
     return res.data;
   },
   invite: async () => {

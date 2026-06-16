@@ -1,9 +1,9 @@
 import apiClient from './client';
-import { ApiResponse, GameResponse } from '@/types';
+import { ApiResponse, GameResponse, RevenueReportResponse } from '@/types';
 
 export const reportsApi = {
   revenue: async () => {
-    const res = await apiClient.get<ApiResponse<Record<string, unknown>>>('/reports/revenue');
+    const res = await apiClient.get<ApiResponse<RevenueReportResponse>>('/reports/revenue');
     return res.data;
   },
   games: async () => {

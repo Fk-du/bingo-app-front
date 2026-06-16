@@ -3,9 +3,26 @@ import { GameResponse, GameStatus } from '@/types';
 import { ActionButton, EmptyState, LiveBadge, Surface, StatusPill } from '@/components/ui/Surface';
 
 const GAME_NAMES = ['Mega Bingo', 'Happy Hour', 'Night Owl', 'Golden Draw', 'Turbo Round', 'Classic 75'];
+const GAME_EMOJIS = ['🔥', '🎯', '🦉', '👑', '⚡', '🎱'];
+const GAME_COLORS = [
+  'from-rose-500/20 to-rose-500/5 border-rose-500/30',
+  'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30',
+  'from-violet-500/20 to-violet-500/5 border-violet-500/30',
+  'from-amber-500/20 to-amber-500/5 border-amber-500/30',
+  'from-cyan-500/20 to-cyan-500/5 border-cyan-500/30',
+  'from-bp-primary/20 to-bp-primary/5 border-bp-primary/30',
+];
 
 function gameDisplayName(id: number): string {
   return GAME_NAMES[id % GAME_NAMES.length];
+}
+
+function gameEmoji(id: number): string {
+  return GAME_EMOJIS[id % GAME_EMOJIS.length];
+}
+
+function gameColor(id: number): string {
+  return GAME_COLORS[id % GAME_COLORS.length];
 }
 
 interface GameListProps {
@@ -102,37 +119,60 @@ function PlayerGameCard({
 }) {
   const isLive = game.status === GameStatus.IN_PROGRESS;
   const isOpen = game.status === GameStatus.REGISTRATION_OPEN;
+  const colorStyle = gameColor(game.id);
 
   return (
-    <Surface className="overflow-hidden p-0">
-      <div className="flex gap-3 p-3">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-bp-primary/40 to-bp-primary/10 text-2xl">
-          🎱
+    <Surface className={`overflow-hidden p-0 transition hover:brightness-110 bp-card-reveal ${isLive ? 'ring-1 ring-bp-danger/30' : ''}`}>
+      <div className={`flex gap-3 p-3 bg-gradient-to-br ${isLive ? 'from-bp-danger/5 to-transparent' : ''}`}>
+        <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${colorStyle} text-2xl shadow-lg`}>
+          {gameEmoji(game.id)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <Link href={`/player/game/${game.id}`} className="font-semibold text-bp-text hover:text-bp-primary">
-              {gameDisplayName(game.id)}
-            </Link>
-            {isLive ? <LiveBadge /> : isOpen ? <StatusPill status={game.status} /> : <StatusPill status={game.status} />}
+            <div>
+              <Link
+                href={`/player/game/${game.id}`}
+                className={`font-semibold transition ${isLive ? 'text-bp-danger hover:text-red-300' : 'text-bp-text hover:text-bp-primary'}`}
+              >
+                {gameDisplayName(game.id)}
+              </Link>
+              {isLive && (
+                <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-bp-danger">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-bp-danger" />
+                  LIVE
+                </span>
+              )}
+            </div>
+            {isOpen && <StatusPill status={game.status} />}
           </div>
-          <p className="mt-1 text-lg font-bold text-bp-gold">{game.prizePool.toLocaleString()} coins</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <p className={`text-xl font-black ${isLive ? 'text-bp-danger drop-shadow-[0_0_8px_rgba(235,87,87,0.3)]' : 'text-bp-gold'}`}>
+              {game.prizePool.toLocaleString()}
+            </p>
+            <span className="text-xs text-bp-muted font-medium">coins</span>
+          </div>
           <div className="mt-1 flex flex-wrap gap-3 text-xs text-bp-muted">
-            <span>Entry {game.entryFee}</span>
-            <span>Max {game.maxPlayers} players</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="text-bp-primary">◆</span>
+              Entry {game.entryFee}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="text-bp-muted">●</span>
+              Max {game.maxPlayers}
+            </span>
           </div>
         </div>
       </div>
       {(isOpen || isLive) && (
-        <div className="flex gap-2 border-t border-bp-border p-3">
+        <div className="flex gap-2 border-t border-bp-border p-3 bg-gradient-to-r from-transparent via-bp-surface-elevated/30 to-transparent">
           <Link href={`/player/game/${game.id}`} className="flex-1">
             <ActionButton variant={isLive ? 'danger' : 'primary'} className="w-full">
-              {isLive ? 'Join Live' : 'View Game'}
+              {isLive ? '▶ Join Live' : 'View Game'}
             </ActionButton>
           </Link>
           {isOpen && onRegister && (
-            <ActionButton variant="gold" onClick={() => onRegister(game.id)} className="flex-1">
-              Register
+            <ActionButton variant="gold" onClick={() => onRegister(game.id)} className="flex-1 font-bold tracking-wide">
+              ✦ Register
             </ActionButton>
           )}
         </div>

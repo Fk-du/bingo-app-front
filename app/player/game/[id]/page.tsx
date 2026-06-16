@@ -121,12 +121,12 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
 
   return (
     <ProtectedRoute roles={[Role.PLAYER]}>
-      <div className="border-b border-bp-border bg-bp-surface px-0 py-3">
+      <div className="border-b border-bp-border bg-bp-surface/80 px-0 py-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-bp-border bg-bp-bg"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-bp-border bg-bp-bg hover:border-bp-primary/50 transition"
           >
             <IconBack className="h-5 w-5" />
           </button>
@@ -134,81 +134,112 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
             <p className="font-semibold text-bp-text">Game #{gameId}</p>
             <p className="text-xs text-bp-muted">Max {game?.maxPlayers ?? '—'} players</p>
           </div>
-          {isLive && <LiveBadge />}
+          {isLive && (
+            <span className="bp-live-badge inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-bp-danger shadow-[0_0_6px_rgba(235,87,87,0.6)]" />
+              Live
+            </span>
+          )}
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Surface className="p-3 text-center">
+        <Surface className="relative overflow-hidden p-3 text-center before:absolute before:inset-0 before:bg-gradient-to-br before:from-bp-gold/5 before:to-transparent">
           <p className="text-[10px] uppercase tracking-wider text-bp-muted">Prize Pool</p>
-          <p className="mt-1 text-xl font-bold text-bp-gold">{prizePool.toLocaleString()}</p>
+          <p className="mt-1 text-2xl font-black text-bp-gold drop-shadow-[0_0_8px_rgba(242,201,76,0.2)]">
+            {prizePool.toLocaleString()}
+          </p>
+          <p className="text-[10px] text-bp-gold/60 font-medium">coins</p>
         </Surface>
-        <Surface className="p-3 text-center">
+        <Surface className="relative overflow-hidden p-3 text-center before:absolute before:inset-0 before:bg-gradient-to-br before:from-bp-primary/5 before:to-transparent">
           <p className="text-[10px] uppercase tracking-wider text-bp-muted">Called</p>
-          <p className="mt-1 text-xl font-bold text-bp-text">{calledNumbers.length}/75</p>
+          <p className="mt-1 text-2xl font-black text-bp-text">{calledNumbers.length}/75</p>
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-bp-surface-elevated">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-bp-primary to-bp-primary-hover transition-all duration-500"
+              style={{ width: `${(calledNumbers.length / 75) * 100}%` }}
+            />
+          </div>
         </Surface>
       </div>
 
       {isConnecting && (
-        <div className="mt-3 rounded-xl border border-bp-primary/30 bg-bp-primary/10 px-4 py-2 text-sm text-bp-primary">
-          Connecting...
+        <div className="mt-3 rounded-xl border border-bp-primary/30 bg-bp-primary/10 px-4 py-2 text-sm text-bp-primary flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-bp-primary" />
+          Connecting to game server...
         </div>
       )}
       {stateLoading && !gameState && (
-        <div className="mt-3 rounded-xl bg-bp-surface px-4 py-2 text-sm text-bp-muted">Loading...</div>
+        <div className="mt-3 rounded-xl bg-bp-surface px-4 py-2 text-sm text-bp-muted flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-bp-muted" />
+          Loading game state...
+        </div>
       )}
 
       {lastCalledNumber && isLive && (
         <div className="mt-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-bp-muted">Called Numbers</p>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {calledNumbers.slice(-12).map((n) => (
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-bp-muted">Last Called</p>
+            <p className="text-[10px] text-bp-muted">{calledNumbers.length} numbers drawn</p>
+          </div>
+          <div className="bp-number-slide mb-3 flex flex-col items-center rounded-2xl border border-bp-danger/30 bg-gradient-to-br from-bp-danger/10 via-bp-danger/5 to-transparent p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-bp-danger/80 mb-1">Number</p>
+            <p className="text-5xl font-black text-bp-text drop-shadow-[0_0_12px_rgba(235,87,87,0.3)]">
+              <span className="text-bp-danger">{numberToLetter(lastCalledNumber)}</span>-{lastCalledNumber}
+            </p>
+          </div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-bp-muted">Recent Calls</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {calledNumbers.slice(-15).reverse().map((n, i) => (
               <span
                 key={n.id}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-bp-danger/40 bg-bp-danger/20 text-sm font-bold text-red-200"
+                className="bp-number-pop flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-bp-danger/40 bg-gradient-to-br from-bp-danger/20 to-bp-danger/5 text-sm font-bold text-red-200 shadow-lg"
+                style={{ animationDelay: `${i * 30}ms` }}
               >
                 {formatNumber(n.number)}
               </span>
             ))}
           </div>
-          {lastCalledNumber && (
-            <p className="text-center text-2xl font-black text-bp-text">
-              {numberToLetter(lastCalledNumber)}-{lastCalledNumber}
-            </p>
-          )}
         </div>
       )}
 
       {claimMessage && (
-        <div className="mt-3 rounded-xl border border-bp-warning/40 bg-bp-warning/15 px-4 py-2 text-sm text-amber-200">
+        <div className="mt-3 rounded-xl border border-bp-warning/40 bg-bp-warning/15 px-4 py-3 text-sm text-amber-200 flex items-center gap-2">
+          <span className="text-lg">⚡</span>
           {claimMessage}
         </div>
       )}
       {error && (
-        <div className="mt-3 rounded-xl border border-bp-danger/40 bg-bp-danger/15 px-4 py-2 text-sm text-red-200">
+        <div className="mt-3 rounded-xl border border-bp-danger/40 bg-bp-danger/15 px-4 py-3 text-sm text-red-200 flex items-center gap-2">
+          <span className="text-lg">✕</span>
           {error}
         </div>
       )}
       {gameOver && (
         <div
-          className={`mt-3 rounded-xl border px-4 py-2 text-center text-sm font-semibold ${
+          className={`mt-3 rounded-xl border px-4 py-4 text-center text-base font-bold ${
             gameOver.won
-              ? 'border-bp-success/40 bg-bp-success/15 text-emerald-300'
+              ? 'border-bp-success/40 bg-gradient-to-br from-bp-success/15 to-bp-success/5 text-emerald-300 drop-shadow-[0_0_12px_rgba(39,174,96,0.2)]'
               : 'border-bp-border bg-bp-surface text-bp-muted'
           }`}
         >
-          {gameOver.won ? 'You won!' : 'Game over'}
+          {gameOver.won ? '🎉 BINGO! You Won! 🎉' : 'Game Over'}
         </div>
       )}
 
       <div className="mt-4">
         {gameStatus === GameStatus.REGISTRATION_OPEN && !hasCard && (
-          <Surface className="p-4 text-center">
-            <p className="text-sm text-bp-muted">Registration is open</p>
-            <p className="mt-1 text-lg font-bold text-bp-gold">Entry: {game?.entryFee ?? '?'} coins</p>
-            <ActionButton variant="primary" onClick={handleRegister} disabled={registering} className="mt-4 w-full">
-              {registering ? 'Joining...' : 'Join Game'}
-            </ActionButton>
+          <Surface className="relative overflow-hidden p-6 text-center before:absolute before:inset-0 before:bg-gradient-to-br before:from-bp-primary/5 before:via-transparent before:to-bp-gold/5">
+            <div className="relative">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-bp-muted">Registration Open</p>
+              <p className="mt-2 text-3xl font-black text-bp-gold drop-shadow-[0_0_8px_rgba(242,201,76,0.2)]">
+                {game?.entryFee ?? '?'}
+              </p>
+              <p className="text-sm text-bp-muted">coins to enter</p>
+              <ActionButton variant="primary" onClick={handleRegister} disabled={registering} className="mt-5 w-full py-3 text-base font-bold tracking-wider">
+                {registering ? '✦ Joining...' : '✦ Join This Game'}
+              </ActionButton>
+            </div>
           </Surface>
         )}
 
@@ -216,17 +247,17 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
           <>
             <BingoCard numbers={playerCard} calledNumbers={calledSet} />
             <div className="mt-3 flex items-center justify-between gap-4 text-sm">
-              <label className="flex items-center gap-2 text-bp-muted">
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-bp-border bg-bp-surface-elevated px-3 py-2 text-bp-muted hover:border-bp-primary/30 transition">
                 <input
                   type="checkbox"
                   checked={autoDaub}
                   onChange={(e) => setAutoDaub(e.target.checked)}
-                  className="rounded border-bp-border"
+                  className="h-4 w-4 rounded border-bp-border accent-bp-primary"
                 />
                 Auto Daub
               </label>
-              <label className="flex items-center gap-2 text-bp-muted">
-                <input type="checkbox" defaultChecked className="rounded border-bp-border" />
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-bp-border bg-bp-surface-elevated px-3 py-2 text-bp-muted hover:border-bp-primary/30 transition">
+                <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-bp-border accent-bp-primary" />
                 Sound
               </label>
             </div>
@@ -236,14 +267,13 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
 
       {isLive && hasCard && (
         <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-lg px-4">
-          <ActionButton
+          <button
             onClick={handleClaim}
             disabled={isClaiming}
-            variant="danger"
-            className="w-full py-4 text-lg font-black tracking-widest shadow-[0_0_24px_rgba(235,87,87,0.4)]"
+            className="bp-bingo-gradient w-full rounded-2xl py-4 text-lg font-black tracking-[0.15em] text-white shadow-[0_0_32px_rgba(235,87,87,0.5)] transition hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
           >
-            {isClaiming ? 'CHECKING...' : 'BINGO!'}
-          </ActionButton>
+            {isClaiming ? '✦ CHECKING...' : '✦ BINGO! ✦'}
+          </button>
         </div>
       )}
     </ProtectedRoute>

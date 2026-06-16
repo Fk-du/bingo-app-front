@@ -9,6 +9,7 @@ export * from './coin';
 export * from './withdrawal';
 export * from './transaction';
 export * from './audit';
+export * from './report';
 
 export interface BroadcastRequest {
   target: string;

@@ -1,12 +1,16 @@
 import { FundStatus, Role } from './enums';
 
 export interface AgentResponse {
-  id: number;
-  userId: number;
-  businessName: string | null;
+  adminUserId: number;
   approved: boolean;
+  businessName: string | null;
+  telegramId: number;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  balance: number;
+  frozenBalance: number;
   active: boolean;
-  createdAt: string;
 }
 
 export interface AgentFundRequestResponse {
