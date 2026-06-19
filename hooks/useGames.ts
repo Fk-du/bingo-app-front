@@ -117,6 +117,18 @@ export function useGameState(id: number) {
   });
 }
 
+export function useAdminGameState(id: number) {
+  return useQuery({
+    queryKey: ['games', 'admin-state', id],
+    queryFn: async () => {
+      const res = await gamesApi.getAdminState(id);
+      return res.data;
+    },
+    enabled: !!id,
+    refetchInterval: 5000,
+  });
+}
+
 export function useGameAudit(id: number) {
   return useQuery({
     queryKey: ['games', 'audit', id],

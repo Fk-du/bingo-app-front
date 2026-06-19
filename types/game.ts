@@ -79,6 +79,23 @@ export interface RegisterResponse {
   cardId: number;
 }
 
+export interface AdminGameStateResponse {
+  gameId: number;
+  status: GameStatus;
+  entryFee: number;
+  maxPlayers: number;
+  currentCallIndex: number;
+  totalNumbersCalled: number;
+  prizePool: number;
+  winningPattern: string | null;
+  callInterval: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  createdAt: string;
+  calledNumbers: number[];
+  playerCount: number;
+}
+
 export interface GameCardResponse {
   id: number;
   gameId: number;

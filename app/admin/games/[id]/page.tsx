@@ -1,11 +1,11 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useMemo } from 'react';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
-import { Role, GameStatus, BingoClaimResultResponse } from '@/types';
+import { Role, GameStatus, BingoClaimResultResponse, CalledNumberResponse } from '@/types';
 import { useGameWebSocket } from '@/hooks/useWebSocket';
 import { useGameStore } from '@/store/game.store';
-import { usePendingClaims, useApproveClaim, useRejectClaim } from '@/hooks/useGames';
+import { usePendingClaims, useApproveClaim, useRejectClaim, useAdminGameState } from '@/hooks/useGames';
 import { ClaimReviewCard } from '@/components/games/ClaimReviewCard';
 import { NumberBoard } from '@/components/games/NumberBoard';
 import { MetricCard, SectionHeader, Surface, StatusPill } from '@/components/ui/Surface';
@@ -16,15 +16,42 @@ export default function AdminGameDetailPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const gameId = Number(id);
   useGameWebSocket(gameId);
-  const { gameStatus, calledNumbers, totalNumbersCalled, prizePool, isConnecting } = useGameStore();
+
+  const {
+    gameStatus, calledNumbers, totalNumbersCalled, prizePool, isConnecting,
+    setGameStatus, setCalledNumbers, setTotalNumbersCalled, setPrizePool,
+  } = useGameStore();
+
   const { data: pendingClaims, refetch: refetchClaims } = usePendingClaims(gameId);
   const { mutate: approveClaim, isPending: isApproving } = useApproveClaim();
   const { mutate: rejectClaim, isPending: isRejecting } = useRejectClaim();
+  const { data: adminState } = useAdminGameState(gameId);
+
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [approvedCount, setApprovedCount] = useState(0);
   const [gameEnded, setGameEnded] = useState(false);
-  const calledSet = new Set(calledNumbers.map((n) => n.number));
+
+  // Populate store from REST fallback when WebSocket hasn't delivered data yet
+  useEffect(() => {
+    if (!adminState) return;
+    if (calledNumbers.length === 0 && adminState.calledNumbers.length > 0) {
+      const mapped: CalledNumberResponse[] = adminState.calledNumbers.map((n, i) => ({
+        id: i, gameId, number: n, sequenceIndex: i, calledAt: null,
+      }));
+      setCalledNumbers(mapped);
+      setTotalNumbersCalled(adminState.totalNumbersCalled);
+    }
+    if (gameStatus === null) {
+      setGameStatus(adminState.status);
+    }
+    if (prizePool === 0 && adminState.prizePool > 0) {
+      setPrizePool(adminState.prizePool);
+    }
+  }, [adminState, gameId, calledNumbers.length, gameStatus, prizePool,
+      setCalledNumbers, setGameStatus, setPrizePool, setTotalNumbersCalled]);
+
+  const calledSet = useMemo(() => new Set(calledNumbers.map((n) => n.number)), [calledNumbers]);
 
   const remainingSlots = MAX_WINNERS - approvedCount;
   const isProcessing = isApproving || isRejecting || processingId !== null;
@@ -108,14 +135,14 @@ export default function AdminGameDetailPage({ params }: { params: Promise<{ id: 
         <MetricCard
           label="Status"
           value={<StatusPill status={gameStatus ?? 'UNKNOWN'} />}
-          accent="cyan"
+          accent="primary"
         />
-        <MetricCard label="Progress" value={`${totalNumbersCalled}/75`} accent="violet" />
-        <MetricCard label="Prize pool" value={prizePool} accent="emerald" />
+        <MetricCard label="Progress" value={`${totalNumbersCalled}/75`} accent="success" />
+        <MetricCard label="Prize pool" value={prizePool} accent="gold" />
         <MetricCard
           label="Winners"
           value={approvedCount}
-          accent="amber"
+          accent="warning"
           note={gameStatus === GameStatus.CLAIM_PENDING ? `${remainingSlots} slots left` : `${approvedCount} approved`}
         />
       </div>

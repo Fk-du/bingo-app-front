@@ -1,5 +1,6 @@
 import apiClient from './client';
 import {
+  AdminGameStateResponse,
   ApiResponse,
   GameResponse,
   GameStateResponse,
@@ -60,6 +61,10 @@ export const gamesApi = {
   },
   getState: async (id: number) => {
     const res = await apiClient.get<ApiResponse<GameStateResponse>>(`/games/${id}/state`);
+    return res.data;
+  },
+  getAdminState: async (id: number) => {
+    const res = await apiClient.get<ApiResponse<AdminGameStateResponse>>(`/games/${id}/state`);
     return res.data;
   },
   audit: async (id: number) => {

@@ -51,7 +51,12 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Link href="/admin/games">
-          <MetricCard label="Pending Claims" value="—" accent="warning" note="Review in game" />
+          <MetricCard
+            label="Pending Claims"
+            value={games?.filter((g) => g.status === GameStatus.CLAIM_PENDING).length ?? 0}
+            accent="warning"
+            note={games?.some((g) => g.status === GameStatus.CLAIM_PENDING) ? 'Review in game' : 'No pending claims'}
+          />
         </Link>
         <Link href="/admin/coins">
           <MetricCard label="Coin Requests" value={pendingCoins.length} accent="primary" />
