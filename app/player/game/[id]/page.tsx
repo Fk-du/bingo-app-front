@@ -90,6 +90,13 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
   const game = games?.find((g) => g.id === gameId);
   const hasCard = playerCard !== null;
   const isLive = gameStatus === GameStatus.IN_PROGRESS;
+  const [bannedState, setBannedState] = useState(gameState?.isBanned ?? false);
+
+  useEffect(() => {
+    if (gameState) {
+      setBannedState(gameState.isBanned);
+    }
+  }, [gameState]);
 
   const handleRegister = () => {
     setRegistering(true);
@@ -109,7 +116,10 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
     setError(null);
     claimBingo(gameId, {
       onSuccess: (res) => {
-        if (res.data.pendingReview) {
+        if (res.data.banned) {
+          setClaimMessage('Invalid Bingo claim — you have been banned from this game.');
+          setBannedState(true);
+        } else if (res.data.pendingReview) {
           setClaimMessage('Bingo claimed! Waiting for admin review.');
         } else if (res.data.valid) {
           setClaimMessage(`Bingo! You won ${res.data.rewardAmount} coins.`);
@@ -227,6 +237,13 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
         </div>
       )}
 
+      {bannedState && (
+        <div className="mt-3 rounded-xl border border-bp-danger/50 bg-gradient-to-br from-bp-danger/20 to-bp-danger/10 px-4 py-4 text-center">
+          <p className="text-base font-bold text-red-300">You have been banned from this game</p>
+          <p className="mt-1 text-sm text-bp-muted">Invalid Bingo claim detected. You can still watch the game.</p>
+        </div>
+      )}
+
       <div className="mt-4">
         {gameStatus === GameStatus.REGISTRATION_OPEN && !hasCard && (
           <Surface className="relative overflow-hidden p-6 text-center before:absolute before:inset-0 before:bg-gradient-to-br before:from-bp-primary/5 before:via-transparent before:to-bp-gold/5">
@@ -265,7 +282,7 @@ export default function PlayerGamePage({ params }: { params: Promise<{ id: strin
         )}
       </div>
 
-      {isLive && hasCard && (
+      {isLive && hasCard && !bannedState && (
         <div className="fixed inset-x-0 bottom-16 z-20 mx-auto max-w-lg px-4">
           <button
             onClick={handleClaim}

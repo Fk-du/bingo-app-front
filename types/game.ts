@@ -48,6 +48,7 @@ export interface GameStateResponse {
   playerCard: number[][] | null;
   hasPlayerCard: boolean;
   isWinner: boolean;
+  isBanned: boolean;
 }
 
 export interface BingoClaimResponse {
@@ -72,6 +73,7 @@ export interface BingoClaimResultResponse {
   rewardAmount: number;
   platformFee: number;
   agentCommission: number;
+  banned: boolean;
 }
 
 export interface RegisterResponse {

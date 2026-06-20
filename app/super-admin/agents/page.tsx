@@ -1,22 +1,76 @@
 'use client';
 
+import { useState } from 'react';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role } from '@/types/enums';
 import { useAgents, useInviteAgent, useUpdateAgentStatus, useFundRequests, useHandleFundRequest } from '@/hooks/useAgents';
+import { useAdminWallet } from '@/hooks/usePlayers';
 import { AgentResponse, AgentFundRequestResponse } from '@/types/agent';
-import { ActionButton, EmptyState, SectionHeader, Surface, StatusPill } from '@/components/ui/Surface';
+import { ActionButton, EmptyState, MetricCard, SectionHeader, Surface, StatusPill } from '@/components/ui/Surface';
+import { IconCoin } from '@/components/ui/Icons';
+
+interface FundReviewDialogProps {
+  requestId: number;
+  amount: number;
+  agentLabel: string;
+  onClose: () => void;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+}
+
+function FundReviewDialog({ requestId, amount, agentLabel, onClose, onApprove, onReject }: FundReviewDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Close"
+      />
+      <Surface className="relative w-full max-w-sm p-5">
+        <p className="text-lg font-bold text-bp-text">Review Fund Request</p>
+        <p className="mt-1 text-sm text-bp-muted">
+          {agentLabel} requested <span className="font-semibold text-bp-gold">{amount.toLocaleString()}</span> coins
+        </p>
+
+        <div className="mt-6 flex gap-2">
+          <ActionButton variant="secondary" onClick={onClose} className="flex-1">
+            Back
+          </ActionButton>
+          <ActionButton variant="danger" onClick={() => { onReject(requestId); onClose(); }} className="flex-1">
+            Reject
+          </ActionButton>
+          <ActionButton variant="success" onClick={() => { onApprove(requestId); onClose(); }} className="flex-1">
+            Approve
+          </ActionButton>
+        </div>
+      </Surface>
+    </div>
+  );
+}
 
 export default function AgentsPage() {
   const { data: agents, isLoading } = useAgents();
   const { mutate: invite, isPending } = useInviteAgent();
   const { mutate: updateStatus } = useUpdateAgentStatus();
   const { data: fundRequests, isLoading: loadingFunds } = useFundRequests();
+  const { data: adminWallet } = useAdminWallet();
   const { mutate: handleFund } = useHandleFundRequest();
+  const [reviewTarget, setReviewTarget] = useState<{
+    id: number;
+    amount: number;
+    agentId: number;
+  } | null>(null);
 
   const pendingApproval = agents?.filter((a) => !a.approved && a.active) ?? [];
   const approvedAgents = agents?.filter((a) => a.approved) ?? [];
   const pendingFunds = fundRequests?.filter((r) => r.status === 'PENDING') ?? [];
   const approvedFunds = fundRequests?.filter((r) => r.status === 'APPROVED') ?? [];
+
+  const agentLabel = (adminUserId: number) => {
+    const agent = agents?.find((a) => a.adminUserId === adminUserId);
+    return agent?.businessName ?? agent?.username ?? `Agent #${adminUserId}`;
+  };
 
   return (
     <ProtectedRoute roles={[Role.SUPER_ADMIN]}>
@@ -30,6 +84,20 @@ export default function AgentsPage() {
           </ActionButton>
         }
       />
+
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        <MetricCard
+          label="Your Balance"
+          value={adminWallet?.balance.toLocaleString() ?? '—'}
+          accent="gold"
+        />
+        <MetricCard label="Pending Funds" value={pendingFunds.length} accent="warning" />
+        <MetricCard
+          label="Approved Funds"
+          value={approvedFunds.reduce((s, r) => s + r.amount, 0).toLocaleString()}
+          accent="success"
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-4">
@@ -125,36 +193,56 @@ export default function AgentsPage() {
               <div className="h-16 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
               <div className="h-16 animate-pulse rounded-[18px] border border-slate-800 bg-slate-900/60" />
             </div>
-          ) : pendingFunds.length === 0 ? (
-            <EmptyState title="No pending fund requests" description="Approved or pending items will appear here." />
-          ) : (
+          ) : fundRequests?.length ? (
             <div className="space-y-2">
-              {pendingFunds.map((req: AgentFundRequestResponse) => (
+              {fundRequests.map((req: AgentFundRequestResponse) => (
                 <div
                   key={req.id}
-                  className="rounded-[18px] border border-slate-800 bg-slate-900/60 p-4"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-slate-800 bg-slate-900/60 px-4 py-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-100">{req.amount} coins</p>
-                      <p className="text-xs text-slate-500">Agent #{req.agentId}</p>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xs font-bold text-slate-400">
+                      <IconCoin className="h-5 w-5" />
                     </div>
-                    <StatusPill status={req.status} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-100">
+                        {req.amount.toLocaleString()} coins
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {agentLabel(req.agentId)} &middot; {new Date(req.createdAt).toLocaleDateString()}
+                      </p>
+                      <div className="mt-1">
+                        <StatusPill status={req.status} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <ActionButton variant="success" onClick={() => handleFund({ id: req.id, action: 'APPROVE' })}>
-                      Approve
+                  {req.status === 'PENDING' && (
+                    <ActionButton
+                      variant="success"
+                      onClick={() => setReviewTarget({ id: req.id, amount: req.amount, agentId: req.agentId })}
+                    >
+                      Review
                     </ActionButton>
-                    <ActionButton variant="danger" onClick={() => handleFund({ id: req.id, action: 'REJECT' })}>
-                      Reject
-                    </ActionButton>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
+          ) : (
+            <EmptyState title="No fund requests" description="Pending items will appear here." />
           )}
         </Surface>
       </div>
+
+      {reviewTarget && (
+        <FundReviewDialog
+          requestId={reviewTarget.id}
+          amount={reviewTarget.amount}
+          agentLabel={agentLabel(reviewTarget.agentId)}
+          onClose={() => setReviewTarget(null)}
+          onApprove={(id) => handleFund({ id, action: 'APPROVE' })}
+          onReject={(id) => handleFund({ id, action: 'REJECT' })}
+        />
+      )}
     </ProtectedRoute>
   );
 }
