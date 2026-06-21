@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import { Role, GameStatus } from '@/types/enums';
 import { useActiveGames, useRegisterForGame } from '@/hooks/useGames';
+import { useAuthStore } from '@/store/auth.store';
 import { GameList } from '@/components/games/GameList';
-import { TabBar } from '@/components/ui/Surface';
-import { IconCoin } from '@/components/ui/Icons';
+import { TabBar, Surface } from '@/components/ui/Surface';
+import { IconCoin, IconWallet } from '@/components/ui/Icons';
 
 type LobbyTab = 'all' | 'upcoming' | 'my';
 
@@ -14,6 +16,7 @@ export default function PlayerGamesPage() {
   const { data: games, isLoading } = useActiveGames();
   const { mutate: register } = useRegisterForGame();
   const [tab, setTab] = useState<LobbyTab>('all');
+  const user = useAuthStore((s) => s.user);
 
   const jackpotTotal = useMemo(
     () => games?.reduce((sum, g) => sum + g.prizePool, 0) ?? 0,
@@ -34,9 +37,23 @@ export default function PlayerGamesPage() {
   }, [games, tab]);
 
   const activeCount = games?.filter(g => g.status === GameStatus.IN_PROGRESS).length ?? 0;
+  const balance = user?.balance ?? 0;
 
   return (
     <ProtectedRoute roles={[Role.PLAYER]}>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-sm text-bp-muted">Welcome,</p>
+          <h1 className="text-xl font-bold text-bp-text">{user?.firstName ?? user?.username ?? 'Player'}</h1>
+        </div>
+        <Link href="/player/wallet">
+          <Surface className="flex items-center gap-2 px-3 py-2">
+            <IconWallet className="h-4 w-4 text-bp-gold" />
+            <span className="font-bold text-bp-gold">{balance.toLocaleString()}</span>
+          </Surface>
+        </Link>
+      </div>
+
       <div className="bp-jackpot-banner mb-4 overflow-hidden rounded-2xl p-4 bp-glow-pulse relative">
         <div className="absolute inset-0 bg-gradient-to-br from-bp-gold/5 via-transparent to-bp-primary/5" />
         <div className="relative flex items-center justify-between">
